@@ -1,0 +1,88 @@
+// [jizh@iMac remote_power]$ graph-easy topo.easy
+//
+//
+// +-------------+  SubmitedData/QueryAnswer   +-----------------------------------------------+
+// |             | --------------------------> |                                               |
+// |             |                             |                                               |
+// |             |  SettingAnswer/Answer       |                                               |
+// |             | --------------------------> |                    Server                     |
+// |             |                             |                                               |
+// |             |  Setting                    |                                               |
+// |             | <-------------------------- |                                               | <+
+// |             |                             +-----------------------------------------------+  |
+// |             |                               |                      |               ^         |
+// | PowerClient |                               | LoginAnswer/Answer   | QueryAnswer   | Login   |
+// |             |                               v                      |               |         |
+// |             |                             +---------------------+  |               |         |
+// |             |                             |                     | <+               |         | Query
+// |             |                             |                     |                  |         |
+// |             |                             |                     |                  |         |
+// |             |                             |    iPhoneClient     | -----------------+         |
+// |             |                             |                     |                            |
+// |             |                             |                     |                            |
+// |             |                             |                     | ---------------------------+
+// +-------------+                             +---------------------+
+  
+
+
+
+syntax = "proto3";
+
+
+package eh2tech;
+
+
+message Login {
+    reserved 15, 2047;//15, 2047 are the last tag, see protobuf's mannual
+    int64 id = 1; // sender's id
+    string sn = 2;// minipower's sn 
+    string password = 3;//minipower's pw
+}
+
+// respond message for Login & Setting
+message Answer {
+    int64 id = 1;
+    int64 err_no = 2; 
+    string comments = 3;
+}
+
+enum Catalog {
+    POWER=0;
+    TEMP=1;
+    FLOW=2;
+    PRESS=3;
+}
+
+message Query {
+    int64 id = 1; // query-er's id
+    string sn = 2;
+    Catalog cat = 3;
+}
+message QueryAnswer {
+    int64 id = 1;
+    string sn = 2;
+    int64 cat = 3; 
+    repeated int64 data = 4;
+    string comments = 5;
+}
+
+message Setting {
+    int64 id =1;
+
+    message CatFreq {
+        Catalog cat = 1;
+        uint32 freq = 2;
+    }
+    repeated CatFreq catfreq = 2;
+
+    enum Action{
+        NONE=0;
+        START=1;
+        SHUTDOWN=2;
+    }
+    Action action=3;
+}
+
+message Empty {
+    int32 id = 1;
+}

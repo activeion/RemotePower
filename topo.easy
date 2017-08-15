@@ -1,0 +1,12 @@
+# name/protocal
+#
+[ PowerClient ] {rows:9} - SubmitedData/QueryAnswer -> [ Server ]
+
+[ iPhoneClient ] - Login -> [Server ]
+[ Server ] {flow: south; rows: 3} - LoginAnswer/Answer -> [ iPhoneClient ]{flow: north; rows: 3}
+
+[ iPhoneClient ] - Query -> [Server ]
+[ Server ] {flow: south; rows: 3} - QueryAnswer -> [ iPhoneClient ]{flow: north; rows: 3}
+
+[ Server ] - Setting -> [ PowerClient ]
+[ PowerClient ] - SettingAnswer/Answer -> [Server]
