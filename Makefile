@@ -1,4 +1,4 @@
-CXXFLAGS = -O0 -g3  -I ../.. -pthread
+CXXFLAGS = -O0 -g3  -pthread 
 LDFLAGS = -lpthread -lmuduo_net_cpp11 -lmuduo_base_cpp11 -lz -lprotobuf
 #LDFLAGS = -lpthread -lmuduo_net -lmuduo_base -lz -lprotobuf
 BASE_SRC = 
@@ -10,6 +10,9 @@ all: protoc_middleman $(BINARIES)
 $(BINARIES): $(HEADERS)
 $(BINARIES):
 	g++ $(CXXFLAGS) -o $@ $(LIB_SRC) $(BASE_SRC) $(filter %.cc,$^) $(LDFLAGS)
+
+cpp11: CXXFLAGS += -I ../build/debug-install-cpp11/include/ -L ../build/debug-install-cpp11/lib
+cpp11:all
 
 clean:
 	rm -f $(BINARIES) core
