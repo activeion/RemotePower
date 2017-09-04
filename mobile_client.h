@@ -6,19 +6,24 @@
 #include <muduo/base/Mutex.h>
 #include <muduo/net/EventLoop.h>
 #include <muduo/net/TcpClient.h>
+#include <muduo/base/noncopyable.h>
 
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <stdio.h>
 
 using namespace muduo;
 using namespace muduo::net;
 
-typedef boost::shared_ptr<eh2tech::Empty> EmptyPtr;
-typedef boost::shared_ptr<eh2tech::Answer> AnswerPtr;
-typedef boost::shared_ptr<eh2tech::QueryAnswer> QueryAnswerPtr;
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
 
-class MobileClient : boost::noncopyable
+typedef std::shared_ptr<eh2tech::Empty> EmptyPtr;
+typedef std::shared_ptr<eh2tech::Answer> AnswerPtr;
+typedef std::shared_ptr<eh2tech::QueryAnswer> QueryAnswerPtr;
+
+class MobileClient : muduo::noncopyable
 {
     public:
         MobileClient(EventLoop* loop,
