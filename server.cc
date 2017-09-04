@@ -157,10 +157,10 @@ class PowerServer : boost::noncopyable
             const char* str_msg = message->sn().c_str();//message中存放的std::string即std::__cxx11::basic_string<char>
             string basename(str_msg);//muduo用的__gnu_cxx::__versa_string<char>
             boost::shared_ptr<LogFile> p(new muduo::LogFile(basename, 
-                        200*1000,//rollFile every xxx bytes 
+                        200*1000,//unit: ms. rollFile every xxx bytes 
                         true, 
-                        10, //at least xx second interval for every flush
-                        10));// LogFile::append() at least call times for every flush.
+                        10, //unit: s. at least xx second interval for every flush
+                        10));//unit:times. LogFile::append() at least call times for every flush.
             logFiles_[message->sn()] = p;
 
         }
