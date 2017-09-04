@@ -7,3 +7,20 @@ RemotePower can collect data from distributed-installed MiniPowerStation by TCP/
 The detailed ProtoBuff protocol design information can be refered by topo.easy file.
 
 contact: jzh@eh2tech.com
+
+
+Compile:
+```
+# pacman -S libzip protobuf
+
+$ git clone https://github.com/chenshuo/muduo.git
+$ cd muduo/
+$ git checkout -b cpp11 origin/cpp11
+$ BUILD_TYPE=debug ./build
+$ BUILD_TYPE=debug ./build install
+
+$ cd remote_power/
+$ make
+
+```
+
