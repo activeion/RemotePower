@@ -19,7 +19,8 @@ $ git checkout -b cpp11 origin/cpp11
 $ BUILD_TYPE=debug ./build
 $ BUILD_TYPE=debug ./build install
 
-$ cd remote_power/
+$ git clone git://github.com/activeion/RemotePower.git
+$ cd RemotePower/
 $ make
 
 ```
