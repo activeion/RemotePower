@@ -21,6 +21,7 @@ $ BUILD_TYPE=debug ./build install
 
 $ git clone git://github.com/activeion/RemotePower.git
 $ cd RemotePower/
+$ git checkout -b dev origin/dev
 $ make
 
 ```
