@@ -4,19 +4,19 @@ PowerClient::PowerClient(EventLoop* loop,
         const InetAddress& serverAddr)
     : loop_(loop),
     client_(loop, serverAddr, "PowerClient"),
-    dispatcher_(boost::bind(&PowerClient::onUnknownMessage, this, _1, _2, _3)),
-    codec_(boost::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))
+    dispatcher_(std::bind(&PowerClient::onUnknownMessage, this, _1, _2, _3)),
+    codec_(std::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))
 {
     dispatcher_.registerMessageCallback<eh2tech::Setting>(
-            boost::bind(&PowerClient::onSetting, this, _1, _2, _3));
+            std::bind(&PowerClient::onSetting, this, _1, _2, _3));
     dispatcher_.registerMessageCallback<eh2tech::Answer>(
-            boost::bind(&PowerClient::onAnswer, this, _1, _2, _3));
+            std::bind(&PowerClient::onAnswer, this, _1, _2, _3));
     dispatcher_.registerMessageCallback<eh2tech::Empty>(
-            boost::bind(&PowerClient::onEmpty, this, _1, _2, _3));
+            std::bind(&PowerClient::onEmpty, this, _1, _2, _3));
     client_.setConnectionCallback(
-            boost::bind(&PowerClient::onConnection, this, _1));
+            std::bind(&PowerClient::onConnection, this, _1));
     client_.setMessageCallback(
-            boost::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
+            std::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
 
     setting_.set_id(1);
     eh2tech::Setting::CatFreq* catfreq;
@@ -37,7 +37,7 @@ void PowerClient::onConnection(const TcpConnectionPtr& conn)
         << conn->peerAddress().toIpPort() << " is "
         << (conn->connected() ? "UP" : "DOWN");
     conn_ = conn;
-    loop_->runEvery(1, boost::bind(&PowerClient::submitMessage,this));
+    loop_->runEvery(1, std::bind(&PowerClient::submitMessage,this));
 
     eh2tech::Login login;
     login.set_sn("M100-20170630");

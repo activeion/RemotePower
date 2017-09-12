@@ -4,21 +4,25 @@
 
 #include <muduo/base/Logging.h>
 #include <muduo/base/Mutex.h>
+#include <muduo/base/noncopyable.h>
 #include <muduo/net/EventLoop.h>
 #include <muduo/net/TcpClient.h>
 
-#include <boost/bind.hpp>
 
 #include <stdio.h>
 
 using namespace muduo;
 using namespace muduo::net;
 
-typedef boost::shared_ptr<eh2tech::Empty> EmptyPtr;
-typedef boost::shared_ptr<eh2tech::Answer> AnswerPtr;
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
+
+typedef std::shared_ptr<eh2tech::Empty> EmptyPtr;
+typedef std::shared_ptr<eh2tech::Answer> AnswerPtr;
 
 
-class PowerClient : boost::noncopyable
+class PowerClient : muduo::noncopyable
 {
  public:
   PowerClient(EventLoop* loop,

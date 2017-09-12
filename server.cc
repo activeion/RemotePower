@@ -8,8 +8,10 @@
 #include <muduo/net/TcpServer.h>
 #include <muduo/base/LogFile.h>
 #include <muduo/base/Logging.h>
+#include <muduo/base/noncopyable.h>
 
-#include <boost/bind.hpp>
+//#include <boost/bind.hpp>
+#include <functional>
 
 #include <stdio.h>
 #include <iostream>
@@ -17,10 +19,14 @@
 using namespace muduo;
 using namespace muduo::net;
 
-typedef boost::shared_ptr<eh2tech::Query> QueryPtr;
-typedef boost::shared_ptr<eh2tech::QueryAnswer> QueryAnswerPtr;
-typedef boost::shared_ptr<eh2tech::Answer> AnswerPtr;
-typedef boost::shared_ptr<eh2tech::Login> LoginPtr;
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
+
+typedef std::shared_ptr<eh2tech::Query> QueryPtr;
+typedef std::shared_ptr<eh2tech::QueryAnswer> QueryAnswerPtr;
+typedef std::shared_ptr<eh2tech::Answer> AnswerPtr;
+typedef std::shared_ptr<eh2tech::Login> LoginPtr;
 
 
 
@@ -34,34 +40,34 @@ struct LogData
 };
 
 
-boost::shared_ptr<muduo::LogFile> g_logFile;
-class PowerServer : boost::noncopyable
+std::shared_ptr<muduo::LogFile> g_logFile;
+class PowerServer : muduo::noncopyable
 {
     public:
         PowerServer(EventLoop* loop,
                 const InetAddress& listenAddr)
             : loop_(loop), 
             server_(loop, listenAddr, "PowerServer"),
-            dispatcher_(boost::bind(&PowerServer::onUnknownMessage, this, _1, _2, _3)),
-            codec_(boost::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))
+            dispatcher_(std::bind(&PowerServer::onUnknownMessage, this, _1, _2, _3)),
+            codec_(std::bind(&ProtobufDispatcher::onProtobufMessage, &dispatcher_, _1, _2, _3))
     {
         dispatcher_.registerMessageCallback<eh2tech::Setting>(
-                boost::bind(&PowerServer::onSetting, this, _1, _2, _3));
+                std::bind(&PowerServer::onSetting, this, _1, _2, _3));
         dispatcher_.registerMessageCallback<eh2tech::Query>(
-                boost::bind(&PowerServer::onQuery, this, _1, _2, _3));
+                std::bind(&PowerServer::onQuery, this, _1, _2, _3));
         dispatcher_.registerMessageCallback<eh2tech::QueryAnswer>(
-                boost::bind(&PowerServer::onQueryAnswer, this, _1, _2, _3));
+                std::bind(&PowerServer::onQueryAnswer, this, _1, _2, _3));
         dispatcher_.registerMessageCallback<eh2tech::Login>(
-                boost::bind(&PowerServer::onLogin, this, _1, _2, _3));
+                std::bind(&PowerServer::onLogin, this, _1, _2, _3));
         dispatcher_.registerMessageCallback<eh2tech::Answer>(
-                boost::bind(&PowerServer::onAnswer, this, _1, _2, _3));
+                std::bind(&PowerServer::onAnswer, this, _1, _2, _3));
 
         server_.setConnectionCallback(
-                boost::bind(&PowerServer::onConnection, this, _1));
+                std::bind(&PowerServer::onConnection, this, _1));
         server_.setMessageCallback(
-                boost::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
+                std::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
 
-        loop_->runEvery(10, boost::bind(&PowerServer::logData, this));
+        loop_->runEvery(10, std::bind(&PowerServer::logData, this));
     }
 
         void start()
@@ -156,11 +162,11 @@ class PowerServer : boost::noncopyable
         {
             const char* str_msg = message->sn().c_str();//message中存放的std::string即std::__cxx11::basic_string<char>
             string basename(str_msg);//muduo用的__gnu_cxx::__versa_string<char>
-            boost::shared_ptr<LogFile> p(new muduo::LogFile(basename, 
-                        200*1000,//rollFile every xxx bytes 
+            std::shared_ptr<LogFile> p(new muduo::LogFile(basename, 
+                        200*1000,//unit: ms. rollFile every xxx bytes 
                         true, 
-                        10, //at least xx second interval for every flush
-                        10));// LogFile::append() at least call times for every flush.
+                        10, //unit: s. at least xx second interval for every flush
+                        10));//unit:times. LogFile::append() at least call times for every flush.
             logFiles_[message->sn()] = p;
 
         }
@@ -248,7 +254,7 @@ class PowerServer : boost::noncopyable
         ProtobufCodec codec_;
 
         std::map<std::string, LogData > powers_;
-        std::map<std::string, boost::shared_ptr<LogFile>> logFiles_;
+        std::map<std::string, std::shared_ptr<LogFile>> logFiles_;
 };
 
 int main(int argc, char* argv[])

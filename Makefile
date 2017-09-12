@@ -1,15 +1,18 @@
-CXXFLAGS = -O0 -g3  -I ../.. -pthread
-LDFLAGS = -lpthread -lmuduo_net_cpp11 -lmuduo_base_cpp11 -lz -lprotobuf
-#LDFLAGS = -lpthread -lmuduo_net -lmuduo_base -lz -lprotobuf
+CXXFLAGS = -O0 -g3  -pthread 
+LDFLAGS = -lpthread -lmuduo_net -lmuduo_base -lz -lprotobuf
 BASE_SRC = 
 LIB_SRC =
 BINARIES = server mobile_client  power_client
 HEADERS=$(wildcard *.h)
 
-all: protoc_middleman $(BINARIES) 
+all:cpp11
+
+cpp11: CXXFLAGS += -I ../build/debug-install-cpp11/include/ -L ../build/debug-install-cpp11/lib
+cpp11: protoc_middleman $(BINARIES) 
 $(BINARIES): $(HEADERS)
 $(BINARIES):
 	g++ $(CXXFLAGS) -o $@ $(LIB_SRC) $(BASE_SRC) $(filter %.cc,$^) $(LDFLAGS)
+
 
 clean:
 	rm -f $(BINARIES) core
