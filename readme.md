@@ -8,6 +8,32 @@ The detailed ProtoBuff protocol design information can be refered by topo.easy f
 
 contact: jzh@eh2tech.com
 
+Communication Scheme
+// [jizh@iMac remote_power]$ graph-easy topo.easy
+//
+//
+// +-------------+  SubmitedData/QueryAnswer   +-----------------------------------------------+
+// |             | --------------------------> |                                               |
+// |             |                             |                                               |
+// |             |  SettingAnswer/Answer       |                                               |
+// |             | --------------------------> |                    Server                     |
+// |             |                             |                                               |
+// |             |  Setting                    |                                               |
+// |             | <-------------------------- |                                               | <+
+// |             |                             +-----------------------------------------------+  |
+// |             |                               |                      |               ^         |
+// | PowerClient |                               | LoginAnswer/Answer   | QueryAnswer   | Login   |
+// |             |                               v                      |               |         |
+// |             |                             +---------------------+  |               |         |
+// |             |                             |                     | <+               |         | Query
+// |             |                             |                     |                  |         |
+// |             |                             |                     |                  |         |
+// |             |                             |    iPhoneClient     | -----------------+         |
+// |             |                             |                     |                            |
+// |             |                             |                     |                            |
+// |             |                             |                     | ---------------------------+
+// +-------------+                             +---------------------+
+
 
 Compile:
 ```
