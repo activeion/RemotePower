@@ -32,11 +32,11 @@ typedef std::shared_ptr<eh2tech::Login> LoginPtr;
 
 struct LogData
 {
-        //eh2tech::Catalog cat;
-        int power[4]; //
-        int temp[4];
-        int flow[4];
-        int press[4];
+    //eh2tech::Catalog cat;
+    int power[4]; //
+    int temp[4];
+    int flow[4];
+    int press[4];
 };
 
 
@@ -103,23 +103,29 @@ class PowerServer : muduo::noncopyable
             //LOG_INFO << "onQueryAnswer:\n" << message->GetTypeName() << "\n" << message->DebugString();
 
             // update data_
-            for(int i=0; i<message->data_size(); ++i) {
-                switch(message->cat()){
-                    case eh2tech::Catalog::POWER:
+            switch(message->cat()){
+                case eh2tech::Catalog::POWER:
+                    for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].power[i]=message->data(i);
-                        break;
-                    case eh2tech::Catalog::TEMP:
-                        powers_[message->sn()].power[i]=message->data(i);
-                        break;
-                    case eh2tech::Catalog::FLOW:
-                        powers_[message->sn()].power[i]=message->data(i);
-                        break;
-                    case eh2tech::Catalog::PRESS:
-                        powers_[message->sn()].power[i]=message->data(i);
-                        break;
-                    default: break;
-                }    
-            }
+                    }
+                    break;
+                case eh2tech::Catalog::TEMP:
+                    for(int i=0; i<message->data_size(); ++i) {
+                        powers_[message->sn()].temp[i]=message->data(i);
+                    }
+                    break;
+                case eh2tech::Catalog::FLOW:
+                    for(int i=0; i<message->data_size(); ++i) {
+                        powers_[message->sn()].flow[i]=message->data(i);
+                    }
+                    break;
+                case eh2tech::Catalog::PRESS:
+                    for(int i=0; i<message->data_size(); ++i) {
+                        powers_[message->sn()].press[i]=message->data(i);
+                    }
+                    break;
+                default: break;
+            }    
         }
 
         void onQuery(const muduo::net::TcpConnectionPtr& conn,
@@ -160,14 +166,19 @@ class PowerServer : muduo::noncopyable
                 const LoginPtr& message, 
                 muduo::Timestamp)
         {
-            const char* str_msg = message->sn().c_str();//message中存放的std::string即std::__cxx11::basic_string<char>
-            string basename(str_msg);//muduo用的__gnu_cxx::__versa_string<char>
-            std::shared_ptr<LogFile> p(new muduo::LogFile(basename, 
-                        200*1000,//unit: ms. rollFile every xxx bytes 
-                        true, 
-                        10, //unit: s. at least xx second interval for every flush
-                        10));//unit:times. LogFile::append() at least call times for every flush.
-            logFiles_[message->sn()] = p;
+            const char* str_sn = message->sn().c_str();//message中存放的std::string即std::__cxx11::basic_string<char>
+            string basename(str_sn);//muduo用的__gnu_cxx::__versa_string<char>
+            if(logFiles_.count(message->sn())==0) {
+                std::shared_ptr<LogFile> p(new muduo::LogFile(basename, 
+                            200*1000,//unit: ms. rollFile every xxx bytes 
+                            true, 
+                            10, //unit: s. at least xx second interval for every flush
+                            10));//unit:times. LogFile::append() at least call times for every flush.
+                logFiles_[message->sn()] = p;
+            } else {
+                LOG_INFO << "same sn login repeated";
+            }
+
 
         }
         void onAnswer(const muduo::net::TcpConnectionPtr& conn,
@@ -225,7 +236,7 @@ class PowerServer : muduo::noncopyable
                     << "\t" \
                     << iter->second.press[3];
             }
-            
+
             //restore stdout
             muduo::Logger::setOutput(defaultOutput);
             muduo::Logger::setFlush(defaultFlush);
