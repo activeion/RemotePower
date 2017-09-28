@@ -8,13 +8,16 @@
 #include <muduo/net/TcpServer.h>
 #include <muduo/base/LogFile.h>
 #include <muduo/base/Logging.h>
-#include <muduo/base/noncopyable.h>
+#include "muduo/base/noncopyable.h"
 
 //#include <boost/bind.hpp>
 #include <functional>
 
 #include <stdio.h>
 #include <iostream>
+#include <exception>
+
+#include <mysql.h>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -29,16 +32,21 @@ typedef std::shared_ptr<eh2tech::Answer> AnswerPtr;
 typedef std::shared_ptr<eh2tech::Login> LoginPtr;
 
 
+#define HOST "localhost"
+#define USERNAME "eh2tech"
+#define PASSWORD "eh2tech"
+#define DATABASE "remotepower"
+
 
 struct LogData
 {
     //eh2tech::Catalog cat;
+	int	deviceid;
     int power[4]; //
     int temp[4];
     int flow[4];
     int press[4];
 };
-
 
 std::shared_ptr<muduo::LogFile> g_logFile;
 class PowerServer : muduo::noncopyable
@@ -96,6 +104,28 @@ class PowerServer : muduo::noncopyable
             LOG_INFO << "onUnknownMessage: " << message->GetTypeName();
         }
 
+		void SaveDatatoDB(const char *col,int deviceid,int *val)
+		{
+			MYSQL dbconn;
+			int res;
+			mysql_init(&dbconn);
+			if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
+			{
+				char sql[2048];
+				sprintf(sql,"insert into %s values(%d,now(),%d,%d,%d,%d)", col,deviceid,val[0],val[1],val[2],val[3]);
+				res=mysql_query(&dbconn,sql);
+				if(res)
+				{
+					LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
+				}
+				mysql_close(&dbconn);
+			}
+			else
+			{
+				LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
+			}
+		}
+
         void onQueryAnswer(const muduo::net::TcpConnectionPtr& conn,
                 const QueryAnswerPtr& message,
                 muduo::Timestamp)
@@ -103,29 +133,49 @@ class PowerServer : muduo::noncopyable
             //LOG_INFO << "onQueryAnswer:\n" << message->GetTypeName() << "\n" << message->DebugString();
 
             // update data_
+
             switch(message->cat()){
                 case eh2tech::Catalog::POWER:
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].power[i]=message->data(i);
                     }
+					SaveDatatoDB("power(deviceid,uptime,vstack,istack,vout,iout)", 1,powers_[message->sn()].power);
                     break;
                 case eh2tech::Catalog::TEMP:
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].temp[i]=message->data(i);
                     }
+					SaveDatatoDB("temp(deviceid,uptime,rfm_tb,rfm_tc,fc_tin,fc_tout)",\
+											1,powers_[message->sn()].temp);
                     break;
                 case eh2tech::Catalog::FLOW:
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].flow[i]=message->data(i);
                     }
+					SaveDatatoDB("flow(deviceid,uptime,rfm_pumptocat,rfm_back,fc_fanspeed,fc_back)",\
+										   1,powers_[message->sn()].flow);
                     break;
                 case eh2tech::Catalog::PRESS:
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].press[i]=message->data(i);
                     }
+					SaveDatatoDB("press(deviceid,uptime,rfm_syspress,rfm_h2press,vout,iout)",\
+											1,powers_[message->sn()].press);
+					/*{
+						eh2tech::Setting set_msg;
+						set_msg.set_id(1);
+						eh2tech::Setting::CatFreq* catfreq;
+						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::TEMP); catfreq->set_freq(15);
+						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::POWER); catfreq->set_freq(3);
+						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::PRESS); catfreq->set_freq(9);
+						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::FLOW); catfreq->set_freq(5);
+						set_msg.set_action(eh2tech::Setting_Action::Setting_Action_NONE);
+						codec_.send(conn, set_msg); 
+						LOG_INFO << "Send Setting message.";
+					}*/
                     break;
                 default: break;
-            }    
+            }
         }
 
         void onQuery(const muduo::net::TcpConnectionPtr& conn,
@@ -178,7 +228,6 @@ class PowerServer : muduo::noncopyable
             } else {
                 LOG_INFO << "same sn login repeated";
             }
-
 
         }
         void onAnswer(const muduo::net::TcpConnectionPtr& conn,

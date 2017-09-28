@@ -7,7 +7,7 @@ HEADERS=$(wildcard *.h)
 
 all:cpp11
 
-cpp11: CXXFLAGS += -I ../build/debug-install-cpp11/include/ -L ../build/debug-install-cpp11/lib
+cpp11: CXXFLAGS += -I ../build/debug-install-cpp11/include/ -I /usr/include/mysql/ -L ../build/debug-install-cpp11/lib  -L /usr/lib/libmysql*.so
 cpp11: protoc_middleman $(BINARIES) 
 $(BINARIES): $(HEADERS)
 $(BINARIES):
