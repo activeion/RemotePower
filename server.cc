@@ -207,6 +207,8 @@ class PowerServer : muduo::noncopyable
                             msg.add_data(powers_[message->sn()].press[i]);
                         }
                         break;
+                    default:
+                        break;
                 }
                 codec_.send(conn, msg); 
             }
@@ -238,6 +240,8 @@ class PowerServer : muduo::noncopyable
                 case  0:
                     break;
                 case 1:
+                    break;
+                default:
                     break;
             }
 
