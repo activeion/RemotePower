@@ -161,18 +161,6 @@ class PowerServer : muduo::noncopyable
                     }
 					SaveDatatoDB("press(deviceid,uptime,rfm_syspress,rfm_h2press,vout,iout)",\
 											1,powers_[message->sn()].press);
-					/*{
-						eh2tech::Setting set_msg;
-						set_msg.set_id(1);
-						eh2tech::Setting::CatFreq* catfreq;
-						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::TEMP); catfreq->set_freq(15);
-						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::POWER); catfreq->set_freq(3);
-						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::PRESS); catfreq->set_freq(9);
-						catfreq=set_msg.add_catfreq(); catfreq->set_cat(eh2tech::Catalog::FLOW); catfreq->set_freq(5);
-						set_msg.set_action(eh2tech::Setting_Action::Setting_Action_NONE);
-						codec_.send(conn, set_msg); 
-						LOG_INFO << "Send Setting message.";
-					}*/
                     break;
                 default: break;
             }
