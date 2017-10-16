@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+  <meta charset="UTF-8">
+  <title>登录</title>
+  <script src="scripts/jquery-1.12.4.min.js"></script>
+  <style type="text/css">
+body{
+  margin: 0;padding: 0;
+  font-size: 16px;
+	 font-family: "微软雅黑", "宋体", "Arial Narrow";
+}
+.pic{width: 95%;height:400px;margin:2px auto;border:1px solid gray;background-color:white;}
+.header{height: 25px;width: 100%;text-align: center;}
+.foot{height: 25px}
+.content{width: 380px;margin: 10px auto;}
+.item{height: 30px;}
+.lable {width: 100px;text-align: center;display:inline-block;}
+.textin{margin-left: 15px;height: 25px;width: 120px}
+.buttons{margin-right: 15px;height: 25px;width: 50px;font-size: 18px}
+</style>
+ </head>
+ <body>
+ <div class="content">
+ <img src="images/logo.png">
+ <form method="POST" action="login.php">
+ <fieldset>
+ <legend>登录</legend>
+    
+    <div class="item">
+        <span class="lable">用户名:</span>
+        <input type="text" name="username" value="test">
+    </div>
+    <div class="item">
+        <span class="lable">密 码:</span>
+        <input type="password" name="password" value="eh2tech">
+    </div>
+    <div class="item" style="text-align: center;">
+    <input class="buttons" type="reset" name="" value="重置">
+    <input class="buttons" type="submit" name="" value="登录">
+    </div>    
+ </fieldset>
+ </form>
+ </div>
+ </body>
+ </html>
