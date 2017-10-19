@@ -1,7 +1,6 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '1'); 
-
+include_once("checklogin.php");
+checkajaxlogin();
 $id="1";
 $typeid="0";
 
@@ -33,9 +32,8 @@ switch($typeid){
 		$sql = "select uptime,vstack as d1,istack as d2,vout as d3,iout as d4 from power where deviceid=".$id."  order by uptime desc LIMIT 100";
 	break;
 }
-$out=[
-	"datatype"=>$typeid,
-];
+$out["error"]="";
+$out["datatype"]=$typeid;
 $mysqli = new mysqli("localhost", "eh2tech", "eh2tech", "remotepower");
 if ($mysqli->connect_errno) {
 	echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;

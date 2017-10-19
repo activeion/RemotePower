@@ -1,7 +1,6 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '1'); 
-header("Content-type: text/html; charset=utf-8");
+include_once("checklogin.php");
+checkajaxlogin();
 $page=1;
 $out["error"]="";
 if(is_array($_GET)&&count($_GET)>0)//判断是否有Get参数 

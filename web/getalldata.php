@@ -1,6 +1,6 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '1'); 
+include_once("checklogin.php");
+checkajaxlogin();
 
 $id="0";
 
@@ -27,7 +27,7 @@ if ($mysqli->connect_errno) {
 	echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
 }
 
-$sql = "select * from devices where id=".$id." LIMIT 0,10";
+$sql = "select * from devices where id=".$id." LIMIT 0,15";
 $result = $mysqli->query($sql);
 if(!$result){
 	echo $sql."<br>";

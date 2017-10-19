@@ -1,3 +1,9 @@
+<?php
+include_once("checklogin.php");
+session_start();
+checklogin();
+$userid = $_SESSION["userid"];
+?>
 <!DOCTYPE HTML>
 <html>
  <head>
@@ -21,6 +27,10 @@
 .lable{margin-left:20px;padding-left:5px;border-left:1px solid white;display:inline-block;}
 .pic{width: 48%;height:400px;float:left;border:1px solid black;background-color:white;margin:6px}
 .foot{left:0;right:0;;height:30px;border-top:2px solid black;padding:2px}
+
+.black_overlay{display:none; position: absolute;  top: 0%;  left: 0%;  width: 100%;  height: 100%;  background-color: black;  z-index:1001;  -moz-opacity: 0.8;  opacity:.50;  filter: alpha(opacity=50);  }  
+.white_content {  display: none;  position: absolute;  top: 5%;  left: 20%; bottom:5%; right:20%; padding:6px; border: 1px solid gray;  background-color: white;  z-index:1002;  overflow: auto; }
+.closeicon{float: right;font-size: 14px;cursor: pointer;text-align: center;width: 35px;}
   </style>
  </head>
  <body>
@@ -29,15 +39,15 @@
  <div class="main">
 	<!--start of left-->
  <div class="left">
-	<div class ="lefthd"><?php echo "用户";?></div>
+	<div class ="lefthd"><?php echo "用户:".$_SESSION["username"];?></div>
 	<div class="menu_wrap">
 	 <ul id="devicelist" class="menuul">
-<?php
+<?php	
 	$mysqli = new mysqli("localhost", "eh2tech", "eh2tech", "remotepower");
 	if ($mysqli->connect_errno) {
 		echo "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
 	}
-	$sql="select * from devices where user=1";
+	$sql="select * from devices where user=".$userid;
 	$result = $mysqli->query($sql);
 	if(!$result){
 		echo "ERROR:(".$mysqli->errno.")".$mysqli->error."<br/>";
@@ -74,10 +84,11 @@
  </div>
  <!-- end of left-->
  <div id="content">
-	<div id="titleinfo" style="margin-left:4px;width:100%;height:25px;background-color:#c0c0c0;padding:3px;text-align:left center">
+	<div id="titleinfo" style="margin-left:4px;width:95%;height:25px;background-color:#c0c0c0;padding:3px;text-align:left center">
 	<?php
 	echo "<span class='lable'>设备:".$d_name."</span><span class='lable'>型号:".$d_type."</span><span class='lable'>序列号:".$sn."</span>";
 	?>
+	<span class="lable"  style='float:right'><input type="button" value="查询历史数据" onclick="showsearch(<?php echo $deviceid;?>)"></span>
 	</div>
 
     <div id="fcinfo" class="pic"></div>
@@ -167,6 +178,7 @@
 		function getData(id,tid){
 			$.get("data.php?id="+id+"&typeid="+tid,function(data,status){
 				var obj = $.parseJSON(data);
+				if(obj.error==""){
 				switch(obj.datatype){
 					case '0':
 					var option={
@@ -209,7 +221,10 @@
 					default:
 					break;
 				}
-			});
+			}else{
+				top.document.location="login.html";
+			}
+			});// end of $.get
 		}
 		var devicelist=null;
 		function getList(page){
@@ -224,6 +239,8 @@
 						var li="<li><a class='mitem' href='#'>"+obj.data[i].name+"</a></li>";
 						ulobj.append(li);
 					}
+				}else{
+					top.document.location="login.html";
 				}
 			}
 		)}
@@ -234,49 +251,47 @@ function getAllData(devid){
 		if(status=="success"){
 			var obj = $.parseJSON(data);
 			if(obj.error!=""){
-			
+				top.document.location="login.html";
 				return;
 			}
 			var span=$("#titleinfo");
 			span.empty();
-			span.html("<span class='lable'>设备:"+obj.detail.d_name+"</span><span class='lable'>型号:"+obj.detail.type+"</span><span class='lable'>序列号:"+obj.detail.sn+"</span>");
-			if(obj.error==""){
-				
-				deviceid=obj.devid;
-				var optpower={
-					xAxis: {
-					data: obj.power.uptime
-					},
-					series: [{data: obj.power.d1},{data: obj.power.d2},{data: obj.power.d3},{data: obj.power.d4}]
-				};
-				fcChart.setOption(optpower);
+			span.html("<span class='lable'>设备:"+obj.detail.d_name+"</span><span class='lable'>型号:"+obj.detail.type+"</span><span class='lable'>序列号:"+obj.detail.sn+"</span>"+"<span class='lable' style='float:right'><input type='button'  value='查询历史数据' onclick='showsearch(deviceid)' /></span>");
 
-				var opttemp={
-					xAxis: {
-					data: obj.temp.uptime
-					},
-					series: [{data: obj.temp.d1},{data: obj.temp.d2},{data: obj.temp.d3},{data: obj.temp.d4}]
-				};
-				tempChart.setOption(opttemp);
+			deviceid=obj.devid;
+			var optpower={
+				xAxis: {
+				data: obj.power.uptime
+				},
+				series: [{data: obj.power.d1},{data: obj.power.d2},{data: obj.power.d3},{data: obj.power.d4}]
+			};
+			fcChart.setOption(optpower);
 
-				var optflow={
-					xAxis: {
-					data: obj.flow.uptime
-					},
-					yAxis: {},
-					series: [{data: obj.flow.d1},{data: obj.flow.d2}]
-				};
-				flowChart.setOption(optflow);
+			var opttemp={
+				xAxis: {
+				data: obj.temp.uptime
+				},
+				series: [{data: obj.temp.d1},{data: obj.temp.d2},{data: obj.temp.d3},{data: obj.temp.d4}]
+			};
+			tempChart.setOption(opttemp);
 
-				var optpress={
-					xAxis: {
-					data: obj.press.uptime
-					},
-					yAxis: {},
-					series: [{data: obj.press.d1},{data: obj.press.d2}]
-				};
-				pressChart.setOption(optpress);
-			}
+			var optflow={
+				xAxis: {
+				data: obj.flow.uptime
+				},
+				yAxis: {},
+				series: [{data: obj.flow.d1},{data: obj.flow.d2}]
+			};
+			flowChart.setOption(optflow);
+
+			var optpress={
+				xAxis: {
+				data: obj.press.uptime
+				},
+				yAxis: {},
+				series: [{data: obj.press.d1},{data: obj.press.d2}]
+			};
+			pressChart.setOption(optpress);
 		}
 		counter=0;
 	})
@@ -302,11 +317,21 @@ function liclick(){
 	li.addClass('cur');
 	li.unbind();
 	getAllData(li.val());
-	//alert(li.val());
 }
 $("#devicelist li").click(liclick);
 $("#devicelist li.cur").unbind();
-    </script>	
+
+function showsearch(devid){
+	$("#light").show();$("#fade").show();
+}
+
+</script>
+
+<div id="light" class="white_content"> 
+<div style="height: 20px;border-bottom: 1px solid gray"><span style="font-size: 16px"><b>历史数据查询</b></span><span class="closeicon" onclick="$('#light').hide();$('#fade').hide();"> 关闭</span></div>
+<div style="height: 579px"><iframe src="searchui.php" style="border: none;height: 550px;width: 100%"></iframe></div>
+</div> 
+<div id="fade" class="black_overlay"> </div> 
  </body>
 </html>
 
