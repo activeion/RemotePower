@@ -53,4 +53,46 @@ $ git checkout -b dev origin/dev
 $ make
 
 ```
+pache, php, mariadb;
+
+
+apache配置：
+/etc/httpd/httpd.conf
+
+
+在LoadModule 末尾增加
+```
+LoadModule php7_module modules/libphp7.so
+```
+
+
+修改 DocumentRoot 为网站文件所在目录
+修改权限：
+```
+<Directory "/win/web">
+.....
+....
+Require all granted  
+# 新版本 Apache 中  Require  为必选项
+</Directory>
+```
+
+
+设置默认文件:
+```
+DirectoryIndex index.php index.html
+```
+若需设置虚拟目录，参考如下:
+
+```
+ Alias "/phpMyAdmin" "/win/web2/phpMyAdmin/" 
+<Directory /win/web2/phpMyAdmin> 
+AllowOverride None 
+Order allow,deny 
+Allow from all 
+Require all granted 
+</Directory>
+```
+
+
 
