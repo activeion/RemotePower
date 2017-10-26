@@ -52,7 +52,6 @@ var datatype = "0";
         // 使用刚指定的配置项和数据显示图表。
 Charts.setOption(optfc);
 
-
 $("#typesel input").click(function(){
 	var t =$(this).val(); 
 	switch(t){
@@ -64,6 +63,7 @@ $("#typesel input").click(function(){
 	}
 	datatype=t;
 });
+
 $("#search").click(function(){
 	//alert($("#txtBeginDate").val());
 	$.post("searchdata.php",
@@ -76,17 +76,29 @@ $("#search").click(function(){
 					switch(obj.datatype){
 						case "0":
 						case "1":{
+						var d1 = [];var d2 = [];var d3 = [];var d4 = [];
+						for(x=0;x<obj.uptime.length;x++){
+							d1.push({name:obj.uptime[x],value:[obj.uptime[x],obj.d1[x]]});
+							d2.push({name:obj.uptime[x],value:[obj.uptime[x],obj.d2[x]]});
+							d3.push({name:obj.uptime[x],value:[obj.uptime[x],obj.d2[x]]});
+							d4.push({name:obj.uptime[x],value:[obj.uptime[x],obj.d2[x]]});
+						}
 						var option={
-							xAxis: { data: obj.uptime},
-							series: [{data: obj.d1},{data: obj.d2},{data: obj.d3},{data: obj.d4}]
+							xAxis: { type:'time',splitLine: {show: false}},
+							series: [{data: d1},{data: d2},{data: d3},{data: d4}]
 						};
 						Charts.setOption(option);
 						break;}
 						case "2":
 						case "3":{
+							var d1 = [];var d2 = [];var d3 = [];var d4 = [];
+						for(x=0;x<obj.uptime.length;x++){
+							d1.push({name:obj.uptime[x],value:[obj.uptime[x],obj.d1[x]]});
+							d2.push({name:obj.uptime[x],value:[obj.uptime[x],obj.d2[x]]});
+						}
 						var option={
-							xAxis: {data: obj.uptime },
-							series: [{data: obj.d1},{data: obj.d2},{data:[]},{data:[]}]
+							xAxis: { type:'time',splitLine: {show: false}},
+							series: [{data: d1},{data: d2},{data:[]},{data:[]}]
 						};
 						Charts.setOption(option);
 						break;}
