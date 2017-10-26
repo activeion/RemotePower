@@ -17,7 +17,7 @@
 #include <iostream>
 #include <exception>
 
-#include <mysql.h>
+#include <mysql/mysql.h>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -104,27 +104,27 @@ class PowerServer : muduo::noncopyable
             LOG_INFO << "onUnknownMessage: " << message->GetTypeName();
         }
 
-		void SaveDatatoDB(const char *col,int deviceid,int *val)
+	void SaveDatatoDB(const char *col,int deviceid,int *val)
+	{
+		MYSQL dbconn;
+		int res;
+		mysql_init(&dbconn);
+		if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
 		{
-			MYSQL dbconn;
-			int res;
-			mysql_init(&dbconn);
-			if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
+			char sql[2048];
+			sprintf(sql,"insert into %s values(%d,now(),%d,%d,%d,%d)", col,deviceid,val[0],val[1],val[2],val[3]);
+			res=mysql_query(&dbconn,sql);
+			if(res)
 			{
-				char sql[2048];
-				sprintf(sql,"insert into %s values(%d,now(),%d,%d,%d,%d)", col,deviceid,val[0],val[1],val[2],val[3]);
-				res=mysql_query(&dbconn,sql);
-				if(res)
-				{
-					LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
-				}
-				mysql_close(&dbconn);
+				LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
 			}
-			else
-			{
-				LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
-			}
+			mysql_close(&dbconn);
 		}
+		else
+		{
+			LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
+		}
+	}
 
         void onQueryAnswer(const muduo::net::TcpConnectionPtr& conn,
                 const QueryAnswerPtr& message,
@@ -139,7 +139,7 @@ class PowerServer : muduo::noncopyable
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].power[i]=message->data(i);
                     }
-					SaveDatatoDB("power(deviceid,uptime,vstack,istack,vout,iout)", 1,powers_[message->sn()].power);
+  		    SaveDatatoDB("power(deviceid,uptime,vstack,istack,vout,iout)", 1,powers_[message->sn()].power);
                     break;
                 case eh2tech::Catalog::TEMP:
                     for(int i=0; i<message->data_size(); ++i) {
@@ -239,7 +239,6 @@ class PowerServer : muduo::noncopyable
 
         void logData()
         {
-            LOG_INFO << "logging data.";
 
             muduo::Logger::setOutput(fileOutput);
             muduo::Logger::setFlush(fileFlush);
