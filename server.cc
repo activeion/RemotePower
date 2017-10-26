@@ -41,7 +41,7 @@ typedef std::shared_ptr<eh2tech::Login> LoginPtr;
 struct LogData
 {
     //eh2tech::Catalog cat;
-	int	deviceid;
+    int deviceid;
     int power[4]; //
     int temp[4];
     int flow[4];
@@ -74,8 +74,6 @@ class PowerServer : muduo::noncopyable
                 std::bind(&PowerServer::onConnection, this, _1));
         server_.setMessageCallback(
                 std::bind(&ProtobufCodec::onMessage, &codec_, _1, _2, _3));
-
-        loop_->runEvery(10, std::bind(&PowerServer::logData, this));
     }
 
         void start()
@@ -108,6 +106,7 @@ class PowerServer : muduo::noncopyable
 	{
 		MYSQL dbconn;
 		int res;
+		if(deviceid==0) return;
 		mysql_init(&dbconn);
 		if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
 		{
@@ -139,28 +138,28 @@ class PowerServer : muduo::noncopyable
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].power[i]=message->data(i);
                     }
-  		    SaveDatatoDB("power(deviceid,uptime,vstack,istack,vout,iout)", 1,powers_[message->sn()].power);
+  		    SaveDatatoDB("power(deviceid,uptime,vstack,istack,vout,iout)", powers_[message->sn()].deviceid,powers_[message->sn()].power);
                     break;
                 case eh2tech::Catalog::TEMP:
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].temp[i]=message->data(i);
                     }
 					SaveDatatoDB("temp(deviceid,uptime,rfm_tb,rfm_tc,fc_tin,fc_tout)",\
-											1,powers_[message->sn()].temp);
+											powers_[message->sn()].deviceid,powers_[message->sn()].temp);
                     break;
                 case eh2tech::Catalog::FLOW:
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].flow[i]=message->data(i);
                     }
 					SaveDatatoDB("flow(deviceid,uptime,rfm_pumptocat,rfm_back,fc_fanspeed,fc_back)",\
-										   1,powers_[message->sn()].flow);
+										   powers_[message->sn()].deviceid,powers_[message->sn()].flow);
                     break;
                 case eh2tech::Catalog::PRESS:
                     for(int i=0; i<message->data_size(); ++i) {
                         powers_[message->sn()].press[i]=message->data(i);
                     }
 					SaveDatatoDB("press(deviceid,uptime,rfm_syspress,rfm_h2press,vout,iout)",\
-											1,powers_[message->sn()].press);
+											powers_[message->sn()].deviceid,powers_[message->sn()].press);
                     break;
                 default: break;
             }
@@ -206,18 +205,38 @@ class PowerServer : muduo::noncopyable
                 const LoginPtr& message, 
                 muduo::Timestamp)
         {
-            const char* str_sn = message->sn().c_str();//message中存放的std::string即std::__cxx11::basic_string<char>
-            string basename(str_sn);//muduo用的__gnu_cxx::__versa_string<char>
-            if(logFiles_.count(message->sn())==0) {
-                std::shared_ptr<LogFile> p(new muduo::LogFile(basename, 
-                            200*1000,//unit: ms. rollFile every xxx bytes 
-                            true, 
-                            10, //unit: s. at least xx second interval for every flush
-                            10));//unit:times. LogFile::append() at least call times for every flush.
-                logFiles_[message->sn()] = p;
-            } else {
-                LOG_INFO << "same sn login repeated";
-            }
+	    if(powers_.count(message->sn())==0){
+		MYSQL dbconn;
+		int res;
+		mysql_init(&dbconn);
+		if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
+		{
+			MYSQL_RES *result;
+			MYSQL_ROW sql_row;	
+			char sql[2048];
+			sprintf(sql,"select * from devices where sn='%s'",message->sn().data());
+			res=mysql_query(&dbconn,sql);
+			if(res)
+			{
+				LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
+			}else{
+				result=mysql_store_result(&dbconn);
+				if(result){
+					sql_row=mysql_fetch_row(result);
+					powers_[message->sn()].deviceid=atoi(sql_row[0]);
+				}
+
+			}
+			if(result!=NULL)
+				mysql_free_result(result);
+			mysql_close(&dbconn);
+		}else{
+			LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
+		}
+	    }else{
+		    LOG_INFO <<"SN:"<<message->sn()<<" reLogin!";
+	    }
+	    		
 
         }
         void onAnswer(const muduo::net::TcpConnectionPtr& conn,
@@ -235,51 +254,6 @@ class PowerServer : muduo::noncopyable
 
             LOG_INFO << "onAnswer: " << message->GetTypeName();
             //conn->shutdown();
-        }
-
-        void logData()
-        {
-
-            muduo::Logger::setOutput(fileOutput);
-            muduo::Logger::setFlush(fileFlush);
-            for(auto iter = powers_.cbegin(); iter!=powers_.cend(); ++iter){
-                g_logFile=logFiles_[iter->first];
-                LOG_INFO<< iter->second.power[0] \
-                    << "\t" \
-                    << iter->second.power[1] \
-                    << "\t" \
-                    << iter->second.power[2] \
-                    << "\t" \
-                    << iter->second.power[3] \
-                    << "\t" \
-                    << iter->second.temp[0] \
-                    << "\t" \
-                    << iter->second.temp[1] \
-                    << "\t" \
-                    << iter->second.temp[2] \
-                    << "\t" \
-                    << iter->second.temp[3] \
-                    << "\t" \
-                    << iter->second.flow[0] \
-                    << "\t" \
-                    << iter->second.flow[1] \
-                    << "\t" \
-                    << iter->second.flow[2] \
-                    << "\t" \
-                    << iter->second.flow[3] \
-                    << "\t" \
-                    << iter->second.press[0] \
-                    << "\t" \
-                    << iter->second.press[1] \
-                    << "\t" \
-                    << iter->second.press[2] \
-                    << "\t" \
-                    << iter->second.press[3];
-            }
-
-            //restore stdout
-            muduo::Logger::setOutput(defaultOutput);
-            muduo::Logger::setFlush(defaultFlush);
         }
 
         static void fileOutput(const char* msg, int len)
@@ -311,18 +285,18 @@ class PowerServer : muduo::noncopyable
 int main(int argc, char* argv[])
 {
     LOG_INFO << "pid = " << getpid();
+    int pt=5010;
     if (argc > 1)
     {
-        EventLoop loop;
-        uint16_t port = static_cast<uint16_t>(atoi(argv[1]));
+	    pt = atoi(argv[1]);
+    }
+        
+        LOG_INFO <<"Listen:" << pt ;
+	EventLoop loop;
+        uint16_t port = static_cast<uint16_t>(pt);
         InetAddress serverAddr(port);
         PowerServer server(&loop, serverAddr);
         server.start();
         loop.loop();
-    }
-    else
-    {
-        printf("Usage: %s port\n", argv[0]);
-    }
 }
 
