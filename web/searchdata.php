@@ -33,6 +33,7 @@ if(is_array($_POST)&&count($_POST)>0)//判断是否有Get参数
 		$endtime=$_POST["endtime"];
 	}
 }
+$id=$_SESSION['deviceid'];
 //echo "typeid:".$typeid."<br>starttime:".$starttime."<br>endtime:".$endtime;
 switch($typeid){
 	case 0:

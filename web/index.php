@@ -68,7 +68,7 @@ $userid = $_SESSION["userid"];
 				$d_name=$row["d_name"];
 				$d_type=$row["type"];
 			}else{
-				echo "<li><a href='javascript:getAllData(".$row["id"].")' >".$row["d_name"]."</a></li>";
+				echo "<li value='".$row["id"]."'>".$row["d_name"]."</li>";
 			}
 		}
 	}else{
@@ -77,8 +77,6 @@ $userid = $_SESSION["userid"];
 	$result->free();
 	$mysqli->close();
 ?>
-	<li value='1'>样机2</li>
-	<li value='1'>样机3</li>
 	 </ul>
 	</div>
  </div>

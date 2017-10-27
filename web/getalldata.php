@@ -16,11 +16,10 @@ if($id=="0"){
 }
 
 
-$userid="1";
 $out["error"]="";
 $out["devid"]=$id;
 
-
+$_SESSION['deviceid']=$id;
 
 $mysqli = new mysqli("localhost", "eh2tech", "eh2tech", "remotepower");
 if ($mysqli->connect_errno) {
