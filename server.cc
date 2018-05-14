@@ -18,7 +18,7 @@
 #include <exception>
 
 #include <mysql/mysql.h>
-
+#include <time.h>
 using namespace muduo;
 using namespace muduo::net;
 
@@ -46,6 +46,13 @@ struct LogData
     int temp[4];
     int flow[4];
     int press[4];
+	int fuel;
+	int alarm[4];
+	int totaltime;
+	int fcState;
+	int preFcState;
+	int fcStateFlag;
+	time_t startTime;
 };
 
 std::shared_ptr<muduo::LogFile> g_logFile;
@@ -124,6 +131,143 @@ class PowerServer : muduo::noncopyable
 			LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
 		}
 	}
+	
+	const char * GetAlarmName(int alarmno){
+		switch(alarmno){
+			case 1: return "tbhigh";
+			case 2: return "tblow";
+			case 3: return "tchigh";
+			case 4: return "tclow";
+			case 5: return "tfhighe";
+			case 6: return "tflow";
+			case 7: return "psyshigh";
+			case 8: return "ph2high";
+			case 9: return "psyslow";
+			case 10: return "ph2low";
+			case 11: return "vbatlow";
+			case 21: return "dcdc";
+			case 22: return "fc_temp";
+			case 23: return "fc_ph2";
+			case 50: return "rpmzero";
+			default: return NULL;
+		}
+	}
+
+	void SaveAlarmtoDB(const char *col,int deviceid,int *val)
+	{
+		MYSQL dbconn;
+		int res;
+		if(deviceid==0) return;
+		mysql_init(&dbconn);
+		if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
+		{
+			char sql[1024];
+			sprintf(sql,"insert into %s values(%d,now(),%d,%d,\"%d,%d\")", col,deviceid,val[0],val[1],val[2],val[3]);
+			res=mysql_query(&dbconn,sql);
+			if(res)
+			{
+				LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
+			}
+			const char * alarmname=0;
+			alarmname = GetAlarmName(val[0]);
+			if(alarmname!=NULL){
+				sprintf(sql,"update devices  set %s =%d where id=%d",alarmname,val[1],deviceid);
+				res=mysql_query(&dbconn,sql);
+				if(res)
+				{
+					LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
+				}
+			}
+			mysql_close(&dbconn);
+		}
+		else
+		{
+			LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
+		}
+	}
+
+	void UpdateFuel(int deviceid,int val)
+	{
+		MYSQL dbconn;
+		int res;
+		if(deviceid==0) return;
+		mysql_init(&dbconn);
+		if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
+		{
+			char sql[2048];
+			sprintf(sql,"update devices  set fuel = fuel+%d where id=%d", val,deviceid);
+			res=mysql_query(&dbconn,sql);
+			if(res)
+			{
+				LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
+			}
+			mysql_close(&dbconn);
+		}
+		else
+		{
+			LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
+		}
+	}
+
+	void UpdateTotalRunTime(LogData *dev)//int deviceid,int val,int pre)
+	{
+		MYSQL dbconn;
+		int res;
+		int totalTime=0;
+		if(dev->deviceid==0) return;
+		if(dev->preFcState!=dev->fcState){
+			time_t xx;
+			time(&xx);
+			//LOG_INFO <<"State:"<<dev->fcState<<",PreState:"<<dev->preFcState;
+			if(dev->preFcState==0&&dev->fcState!=0){
+				dev->preFcState = dev->fcState;
+				time(&dev->startTime);
+				//LOG_INFO <<"TIME of Start:"<<dev->startTime;
+				return;
+			}
+			if(dev->fcState==0&&dev->preFcState!=0){
+				dev->preFcState = dev->fcState;
+				time_t tt;
+				time(&tt);
+				totalTime = difftime(tt,dev->startTime);
+				totalTime=(int)(totalTime/60);
+				time(&dev->startTime);
+				if(totalTime<=0) return;
+			}else{
+				dev->preFcState = dev->fcState;
+				return;
+			}
+		}else{
+			if(dev->fcState!=0){
+				if(dev->fcStateFlag==1){
+					time_t tt;
+					time(&tt);
+					totalTime = difftime(tt,dev->startTime);
+					totalTime=(int)(totalTime/60);
+					time(&dev->startTime);
+				}
+				if(totalTime<=0) return;
+			}else{
+				return;
+			}
+		}
+		mysql_init(&dbconn);
+		if(mysql_real_connect(&dbconn,HOST,USERNAME,PASSWORD,DATABASE,0,NULL,CLIENT_FOUND_ROWS)) 
+		{
+			char sql[1024];
+			sprintf(sql,"update devices  set totaltime = totaltime + %d where id=%d", totalTime,dev->deviceid);
+			res=mysql_query(&dbconn,sql);
+			if(res)
+			{
+				LOG_INFO <<"Mysql ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn)<<"\n"<< sql;
+			}
+			mysql_close(&dbconn);
+		}
+		else
+		{
+			LOG_INFO <<"Mysql Connect failt! ERROR:"<< mysql_errno(&dbconn)<<"-"<< mysql_error(&dbconn);
+		}
+	}
 
         void onQueryAnswer(const muduo::net::TcpConnectionPtr& conn,
                 const QueryAnswerPtr& message,
@@ -160,6 +304,23 @@ class PowerServer : muduo::noncopyable
                     }
 					SaveDatatoDB("press(deviceid,uptime,rfm_syspress,rfm_h2press,vout,iout)",\
 											powers_[message->sn()].deviceid,powers_[message->sn()].press);
+                    break;
+                case eh2tech::Catalog::ALARM:
+                    for(int i=0; i<message->data_size(); ++i) {
+                        powers_[message->sn()].alarm[i]=message->data(i);
+                    }
+                    SaveAlarmtoDB("alarm(deviceid,uptime,alarmno,level,note)",\
+                                powers_[message->sn()].deviceid,powers_[message->sn()].alarm);
+					break;
+                case eh2tech::Catalog::FUEL:
+                    powers_[message->sn()].fuel = message->data(0);
+                    UpdateFuel(powers_[message->sn()].deviceid,powers_[message->sn()].fuel);
+                    break;
+                case eh2tech::Catalog::TOTALTIME:
+                    //powers_[message->sn()].totaltime = message->data(0);
+                    powers_[message->sn()].fcState = message->data(0);
+					powers_[message->sn()].fcStateFlag = message->data(1);
+                    UpdateTotalRunTime(&powers_[message->sn()]);//powers_[message->sn()].deviceid,powers_[message->sn()].totaltime,powers_[message->sn()].preFcState);
                     break;
                 default: break;
             }
@@ -224,8 +385,10 @@ class PowerServer : muduo::noncopyable
 				if(result){
 					sql_row=mysql_fetch_row(result);
 					powers_[message->sn()].deviceid=atoi(sql_row[0]);
+					time(&powers_[message->sn()].startTime);
+					powers_[message->sn()].preFcState=0;
+					powers_[message->sn()].fcStateFlag=0;
 				}
-
 			}
 			if(result!=NULL)
 				mysql_free_result(result);

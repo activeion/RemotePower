@@ -31,12 +31,19 @@ syntax = "proto3";
 
 package eh2tech;
 
+enum TermType{
+    DEVICE=0;
+    MOBILE=1;
+    PC=2;
+}
 
 message Login {
     reserved 15, 2047;//15, 2047 are the last tag, see protobuf's mannual
     int64 id = 1; // sender's id
     string sn = 2;// minipower's sn 
     string password = 3;//minipower's pw
+    TermType term=4;	//terminal type
+    string location=5;	//
 }
 
 // respond message for Login & Setting
@@ -51,6 +58,9 @@ enum Catalog {
     TEMP=1;
     FLOW=2;
     PRESS=3;
+    ALARM=4;
+    FUEL=5;
+    TOTALTIME=6;
 }
 
 message Query {
@@ -61,7 +71,7 @@ message Query {
 message QueryAnswer {
     int64 id = 1;
     string sn = 2;
-    int64 cat = 3; 
+    Catalog cat = 3; 
     repeated int64 data = 4;
     string comments = 5;
 }
